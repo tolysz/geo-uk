@@ -5,6 +5,8 @@ module Data.Geo.Point
  convGPStoUKOS',
  convUKOStoGPS,
  convUKOStoSHORT,
+ convGPStoSHORT,
+ convGPStoSHORT',
  GPS(..),
  WGS84EN(..),
  UKOS(..)
@@ -15,7 +17,7 @@ where
 --import qualified Geo.OSGM02Tab as O2
 import Data.Geo.OSGM02Tab
 import Text.Printf
-import Data.List (intersperse)
+import Data.List (intercalate)
 
 data GPS = GPS Double Double Double
     deriving (Show, Eq)
@@ -33,7 +35,8 @@ convGPStoUKOS   =  convWGS84ENtoUKOS   . convWGS84toWGS84EN
 convGPStoUKOS'  =  convWGS84ENtoUKOS'  . convWGS84toWGS84EN
 convGPStoUKOS'' =  convWGS84ENtoUKOS'' . convWGS84toWGS84EN
 
-convUKOStoGPS (UKOS e n a) = (GPS la lo al)
+-- todo: implement
+convUKOStoGPS (UKOS e n a) = GPS la lo al
                     where
                       la = e
                       lo = n
@@ -113,8 +116,8 @@ convWGS84ENtoUKOS (WGS84EN we wn wa) =  UKOS  e n h
                (PTPDD se1 sn1 sg1 ) = gb ! (ei+1,ni)
                (PTPDD se2 sn2 sg2 ) = gb ! (ei+1,ni+1)
                (PTPDD se3 sn3 sg3 ) = gb ! (ei,ni+1)
-               dx = we - 1000 * (fromIntegral ei)
-               dy = wn - 1000 * (fromIntegral ni)
+               dx = we - 1000 * fromIntegral ei
+               dy = wn - 1000 * fromIntegral ni
                t = dx / 1000
                u = dy / 1000
                se = (1-t)*(1-u)*se0 + t*(1-u)*se1 + t*u*se2 + (1-t)* u * se3
@@ -152,14 +155,14 @@ convWGS84ENtoUKOS'' (WGS84EN e n a) =  UKOS  e n a
                                s   = 20.4894e-6
                                -}
 
-convUKOStoSHORT (UKOS e n a)  = SHORT $ le ++ (printf "%05d%05d" e1 n1)
+convUKOStoSHORT (UKOS e n a)  = SHORT $ le ++ printf "%05d%05d" e1 n1
                           where
                             (le,(e1,n1)) = toLerrersD e n
 
 shortToChunks :: SHORT -> [String]
 shortToChunks s@(SHORT a) = case a of
                      [] -> []
-                     _ -> let (s1, c) = shortLower s in (shortToChunks s1) ++ [c]
+                     _ -> let (s1, c) = shortLower s in shortToChunks s1 ++ [c]
 chunksToShort :: [String] -> SHORT
 chunksToShort a = case a of 
                   [] -> SHORT []
@@ -169,34 +172,35 @@ shortLower :: SHORT -> (SHORT,String)
 shortLower (SHORT z) = case z of
            []      -> (SHORT [], [])
            c@[a,b] -> (SHORT [], c)
-           (a:b:d) -> let (d1,d2) = splitAt ((length d) `div` 2 ) d
-                    in (SHORT $ a:b:((init d1) ++ (init d2)), [last d1,last d2])
+           (a:b:d) -> let (d1,d2) = splitAt (length d `div` 2 ) d
+                    in (SHORT $ a:b:(init d1 ++ init d2), [last d1,last d2])
 shortRise :: (SHORT,String) -> SHORT
-shortRise ((SHORT z), u@[b1,b2]) = SHORT $ case z of
+shortRise (SHORT z, u@[b1,b2]) = SHORT $ case z of
                     [] -> u
                     [a1,a2] -> z ++ u
-                    (a1:a2:d) -> let (d1,d2) = splitAt ((length d) `div` 2 ) d in [a1,a2] ++ d1 ++ [b1] ++ d2 ++ [b2]
+                    (a1:a2:d) -> let (d1,d2) = splitAt (length d `div` 2 ) d in [a1,a2] ++ d1 ++ [b1] ++ d2 ++ [b2]
 
 toLerrersD :: Double -> Double -> (String,(Int, Int))
 toLerrersD de dn = (toLetters e' n',(mx e', mx n'))
    where
-     ax x = floor (x)
+--      ax x = floor x
      mx x = x `mod` 100000
-     e' = ax de
-     n' = ax dn
+     e' = floor de
+     n' = floor dn
 
 
 --useless
 shortPath  :: SHORT -> String
 shortPath = shortPath' 3 "/"
 shortPath'  :: Int -> String -> SHORT -> String
-shortPath' i s = concat . (intersperse s) . ( take i) . shortToChunks
+shortPath' i s = intercalate s .  take i . shortToChunks
 
 
 shortFname :: SHORT -> String
 shortFname = shortFname' 3 ""
+
 shortFname' :: Int -> String ->SHORT -> String
-shortFname' i s = concat . (intersperse s) . ( drop i) . shortToChunks
+shortFname' i s = intercalate s . drop i . shortToChunks
 
 toLetters :: Int -> Int -> String
 toLetters e' n' = [x,y]
