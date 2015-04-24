@@ -19,3 +19,5 @@ log/
 .cabal-sandbox/
 cabal.sandbox.config
 *.sublime-*
+
+.idea
