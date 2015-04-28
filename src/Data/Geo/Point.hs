@@ -9,7 +9,8 @@ module Data.Geo.Point
  convGPStoSHORT',
  GPS(..),
  WGS84EN(..),
- UKOS(..)
+ UKOS(..),
+ SHORT(..)
 )
 
 where
