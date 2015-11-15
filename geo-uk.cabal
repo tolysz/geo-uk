@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                geo-uk
-version:             0.1.0.0
+version:             0.1.0.1
 synopsis:            High precision conversion between GPS and UK Grid
 description:         Conversion between GPS and UKGrid Coordinates one approximate and one using table.
 homepage:            https://github.com/tolysz/geo-uk
@@ -24,20 +24,18 @@ library
   exposed-modules:     Data.Geo.OSGM02Tab
                        Data.Geo.Type
                        Data.Geo.Point
-                       Data.Geo.Conv
   -- other-modules:       
   -- other-extensions:
   if flag(embeded)
       cpp-options: -DEMBEDED_DATA
       build-depends: bzlib
+                   , file-embed
   build-depends:       base >=4.7 && < 5
-               ,       file-embed
                ,       array
                ,       binary
                ,       bytestring
                ,       th-lift
                ,       template-haskell
-               ,       geodetics
   hs-source-dirs:      src
   default-language:    Haskell2010
   ghc-options: -O2

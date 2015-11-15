@@ -18,9 +18,6 @@ data PTPDD = PTPDD !Double !Double !Double deriving Show
 instance Lift PTPDD where
  lift (PTPDD a b c) = [| PTPDD $(lift a) $(lift b) $(lift c) |]
 
--- instance Lift Double where
---   lift x = [| $(litE $ rationalL $ toRational x) :: Double |]
-
 instance Binary PTPDD where
   put (PTPDD de dn da ) =
     put de >>
