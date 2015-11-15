@@ -1,5 +1,7 @@
 
-module Data.Geo.Conv
+module Data.Geo.Conv where
+{-
+
   ( UKOS(..)
   , WGS84 (..)
   , convWGS84toUKOS
@@ -353,3 +355,4 @@ normalizeUKOS (UKOST tt) = UKOS e' n'
                n' = (10 ^ l * n + n1) * 10 ^ (5 -l) + c
 normalizeUKOS a@(UKOSTI _ ) = normalizeUKOS $ toUKOST a
 normalizeUKOS a = a
+-}
