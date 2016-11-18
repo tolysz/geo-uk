@@ -3,9 +3,7 @@ resolver: lts-7.9
 packages:
 - .
 
-extra-deps:
-#- th-inline-io-action-0.1.0.1
-- th-inline-io-action-0.1.0.0
+extra-deps: []
 
 flags: {}
 

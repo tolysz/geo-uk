@@ -21,13 +21,22 @@ import Data.Geo.OSGM02Tab
 import Text.Printf
 import Data.List (intercalate)
 
-data GPS = GPS Double Double Double
+data GPS = GPS
+  {-# UNPACK #-} !Double
+  {-# UNPACK #-} !Double
+  {-# UNPACK #-} !Double
     deriving (Show, Eq)
 
-data WGS84EN =  WGS84EN Double Double Double
+data WGS84EN =  WGS84EN
+  {-# UNPACK #-} !Double
+  {-# UNPACK #-} !Double
+  {-# UNPACK #-} !Double
     deriving (Show, Eq)
 
-data UKOS = UKOS Double Double Double
+data UKOS = UKOS
+  {-# UNPACK #-} !Double
+  {-# UNPACK #-} !Double
+  {-# UNPACK #-} !Double
     deriving (Show, Eq)
 
 data SHORT = SHORT String
