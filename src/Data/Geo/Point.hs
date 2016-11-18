@@ -1,4 +1,4 @@
-{-# LANGUAGE EmptyDataDecls #-}
+-- {-# LANGUAGE EmptyDataDecls #-}
 
 module Data.Geo.Point
 (
@@ -110,17 +110,14 @@ convWGS84toWGS84EN (GPS phi' lam' alt) = WGS84EN ea no alt
     no = i +  mlam2 * (ii + mlam2 * (iii + iiia * mlam2))
 
 convWGS84ENtoUKOS :: WGS84EN -> UKOS
-convWGS84ENtoUKOS pt@(WGS84EN we wn wa) =
-   case gb of
-   Just gb' -> UKOS  e n h
+convWGS84ENtoUKOS pt@(WGS84EN we wn wa) = UKOS  e n h
        where
          ei  = round (we / 1000)
          ni  = round (wn / 1000)
-         Just gb' = gb
-         (PTPDD se0 sn0 sg0 ) = gb' ! (ei,ni)
-         (PTPDD se1 sn1 sg1 ) = gb' ! (ei+1,ni)
-         (PTPDD se2 sn2 sg2 ) = gb' ! (ei+1,ni+1)
-         (PTPDD se3 sn3 sg3 ) = gb' ! (ei,ni+1)
+         (PTPDD se0 sn0 sg0 ) = gb ! (ei,ni)
+         (PTPDD se1 sn1 sg1 ) = gb ! (ei+1,ni)
+         (PTPDD se2 sn2 sg2 ) = gb ! (ei+1,ni+1)
+         (PTPDD se3 sn3 sg3 ) = gb ! (ei,ni+1)
          dx = we - 1000 * fromIntegral ei
          dy = wn - 1000 * fromIntegral ni
          t = dx / 1000
@@ -131,8 +128,6 @@ convWGS84ENtoUKOS pt@(WGS84EN we wn wa) =
          e = we + se
          n = wn + sn
          h = wa - sg
-   Nothing -> convWGS84ENtoUKOS' pt
-
 
 convGPStoSHORT = convUKOStoSHORT . convGPStoUKOS
 convGPStoSHORT' = convUKOStoSHORT . convGPStoUKOS'
