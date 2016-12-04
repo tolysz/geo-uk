@@ -9,10 +9,12 @@ module Data.Geo.Point
  convGPStoSHORT,
  convGPStoSHORT',
  convWGS84ENtoUKOS,
+ convSHORTtoSHORTI,
  GPS(..),
  WGS84EN(..),
- UKOS(..),
- SHORT(..)
+ UKOS(..)
+,SHORT(..)
+,SHORTI(..)
 )
 
 where
@@ -20,6 +22,7 @@ where
 import Data.Geo.OSGM02Tab
 import Text.Printf
 import Data.List (intercalate)
+import Data.Char
 
 data GPS = GPS
   {-# UNPACK #-} !Double
@@ -42,18 +45,57 @@ data UKOS = UKOS
 data SHORT = SHORT String
     deriving (Show, Eq)
 
+data SHORTI = SHORTI String
+    deriving (Show, Eq)
+
+convSHORTtoSHORTI :: SHORT -> SHORTI
+convSHORTtoSHORTI (SHORT (a1:b1:a2:a3:a4:a5:a6:b2:b3:b4:b5:b6:[])) = SHORTI (toLower a1:toLower b1:a2:b2:a3:b3:a4:b4:a5:b5:a6:b6:[])
+
 convGPStoUKOS   =  convWGS84ENtoUKOS   . convWGS84toWGS84EN
 convGPStoUKOS'  =  convWGS84ENtoUKOS'  . convWGS84toWGS84EN
 convGPStoUKOS'' =  convWGS84ENtoUKOS'' . convWGS84toWGS84EN
 
 -- todo: implement
-convUKOStoGPS (UKOS e n a) = GPS la lo al
-  where
-    la = e
-    lo = n
-    al  = a
+convUKOStoGPS = convWGS84ENtoGPS . convUKOStoWGS84EN
+
+
+--(UKOS e n a) = GPS la lo al
+--  where
+--    la = e
+--    lo = n
+--    al  = a
+
+diffWGS84ENtoUKOS :: Double -> Double -> (Double, Double, Double)
+diffWGS84ENtoUKOS we wn = (se, sn, sg)
+             where
+               ei  = round (we / 1000)
+               ni  = round (wn / 1000)
+               (PTPDD se0 sn0 sg0 ) = gb ! (ei,ni)
+               (PTPDD se1 sn1 sg1 ) = gb ! (ei+1,ni)
+               (PTPDD se2 sn2 sg2 ) = gb ! (ei+1,ni+1)
+               (PTPDD se3 sn3 sg3 ) = gb ! (ei,ni+1)
+               dx = we - 1000 * (fromIntegral ei)
+               dy = wn - 1000 * (fromIntegral ni)
+               t = dx / 1000
+               u = dy / 1000
+               se = (1-t)*(1-u)*se0 + t*(1-u)*se1 + t*u*se2 + (1-t)* u * se3
+               sn = (1-t)*(1-u)*sn0 + t*(1-u)*sn1 + t*u*sn2 + (1-t)* u * sn3
+               sg = (1-t)*(1-u)*sg0 + t*(1-u)*sg1 + t*u*sg2 + (1-t)* u * sg3
+
+convUKOStoWGS84EN (UKOS e n a) = WGS84EN (e - de) (n - dn) (a + da)
+                     where
+                       (de, dn, da) = loop 0 0
+                       loop de1 dn1 = let
+                                    h@(den, dnn, dan) = diffWGS84ENtoUKOS (e - de1) (n - dn1)
+                                    in
+                                    case (abs(de1 - den) + abs(dn1 - dnn) < 0.000000001 ) of
+                                      True -> h
+                                      False -> loop den dnn
+
 
 toRad x = x * pi / 180.0
+toDeg x = x * 180 / pi
+
 
 convWGS84toWGS84EN :: GPS -> WGS84EN
 convWGS84toWGS84EN (GPS phi' lam' alt) = WGS84EN ea no alt
@@ -137,6 +179,73 @@ convWGS84ENtoUKOS pt@(WGS84EN we wn wa) = UKOS  e n h
          e = we + se
          n = wn + sn
          h = wa - sg
+
+convWGS84ENtoGPS :: WGS84EN -> GPS
+convWGS84ENtoGPS (WGS84EN ea no alt) = (GPS phi' lam' alt)
+   where
+    a = 6378137.000
+    b = 6356752.3141
+--    a = 6377563.396
+--    b = 6356256.910
+    f0 = 0.9996012717
+    phi0 = toRad 49
+    lam0 = toRad (-2)
+    e0  = 400000.0
+    n0  = -100000
+
+    de = ea - e0
+    de2 = de * de
+
+    a2 = a**2
+    b2 = b**2
+    e2 = (a2 - b2) / a2 -- B1
+
+    phi = fixP ((no - n0) / a / f0 + phi0)
+
+    fixP p = let d = (no - n0 -(calcM a b p))
+                 r = d / a / f0 + p
+             in
+              if abs(d)<0.00001 then
+                r
+              else
+                fixP r
+
+    n   = (a - b)/(a+b)  -- B2
+    n2 = n*n
+    n3 = n2*n
+    s = sin phi
+    s2 = s*s
+
+    omes = 1 / sqrt (1 - e2 *s2)
+
+    ν  = a * f0 * omes --B3
+    ρ = a * f0 * (1 - e2)*omes**3 --B4
+    ν2 = 1 / (ν * ν)
+    η = ν / ρ - 1 -- B5 nu²
+--    phi' = phi
+--    lam' = 0
+    t = tan phi
+    t2 = t * t
+    vii = t / (2 * ρ * ν)
+
+    viii' = vii * ν2 / 12
+    viii = viii' * (5 + 3 * t2 * (1 - 3 * η) + η )
+
+    ix' = viii' * ν2 / 30
+    ix = ix' *(61 + 45 * t2 *(2 +  t2))
+--    phi' = ix
+    phi' =  toDeg $ phi - de2 * ( vii - de2 * (viii - de2 * ix))
+------
+    x = 1 / ( ν * (cos phi))
+    xi' = x * ν2 / 6
+    xi = xi' * (1 + η + 2 * t2)
+    xii' = xi' * ν2 / 20
+    xii = xii' * (5 + 4*t2*(7 + 6 * t2))
+    xiia' = xii' * ν2 / 42
+    xiia = xiia' * ( 61 + t2 *( 662 + t2*(1320 + 720 * t2)))
+--    phi' = phi
+    lam' = toDeg $ lam0 + de * (x - de2 * ( xi - de2 * (xii - de2 * xiia)))
+
 
 convGPStoSHORT = convUKOStoSHORT . convGPStoUKOS
 convGPStoSHORT' = convUKOStoSHORT . convGPStoUKOS'
@@ -525,3 +634,27 @@ tst = do
   putStrLn "Oracle: 506131.248 183880.278 -46.098"
   print $ convWGS84ENtoUKOS' $ WGS84EN 506132.694 183880.496 0
   print $ convWGS84ENtoUKOS  $ WGS84EN 506132.694 183880.4960 0
+
+
+calcM a b phi = m
+        where
+--            a = 6378137.000
+--            b = 6356752.3141
+--            a = 6377563.396
+--            b = 6356256.910
+            f0 = 0.9996012717
+            phi0 = toRad 49
+---            lam0 = toRad (-2)
+
+            n   = (a - b)/(a+b)  -- B2
+            n2 = n*n
+            n3 = n2*n
+
+
+            pphi = phi + phi0
+            mphi = phi - phi0
+            m1 = (1 + n + 5/4 * (n2+n3)) * mphi
+            m2 = (3*(n+n2) + 2.625*n3) * (sin mphi) * (cos pphi)
+            m3 = 1.875*(n2+n3) * (sin $ 2 * mphi) * (cos $ 2 * pphi)
+            m4 = 35/24*n3 * (sin $ 3 * mphi) * (cos $ 3 * pphi)
+            m =  f0 * b * (m1 - m2 + m3 - m4)
