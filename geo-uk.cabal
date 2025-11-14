@@ -1,5 +1,5 @@
 name:                geo-uk
-version:             0.1.0.3
+version:             0.1.1.0
 synopsis:            High precision conversion between GPS and UK Grid
 description:         Conversion between GPS and UKGrid Coordinates one approximate and one using table.
 homepage:            https://github.com/tolysz/geo-uk
@@ -7,7 +7,7 @@ license:             BSD3
 license-file:        LICENSE
 author:              Marcin Tolysz
 maintainer:          tolysz@gmail.com
-copyright:           (c) 2015 Marcin Tolysz, (c) Crown copyright, Ordnance Survey and the Ministry of Defence (MOD) 2002. All rights
+copyright:           (c) 2015-25 Marcin Tolysz, (c) Crown copyright, Ordnance Survey and the Ministry of Defence (MOD) 2002. All rights
 category:            Data
 build-type:          Simple
 extra-source-files:  data/GB.dat
